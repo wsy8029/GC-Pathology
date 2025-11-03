@@ -15,56 +15,33 @@ WSI와 GreenVet Excel 메타데이터가 입력되어 모델 학습과 배포까
 ```mermaid
 flowchart LR
     subgraph 입력 데이터 수집
-        A[WSI (SVS) 원천 파일]
-        B[GreenVet CSV 메타데이터]
+        A["WSI (SVS) 원천 파일"]
+        B["GreenVet CSV 메타데이터"]
     end
     subgraph 데이터 정합성 및 전처리
-        C[식별자 정합성 검사
-        · 누락/중복 검사 의뢰 확인
-        · FILE_NAME 파싱 및 SVS 매핑]
-        D[슬라이드 수준 QC
-        · 배경 마스킹
-        · 아티팩트/포커스 점검]
-        E[텍스트 정규화
-        · HTML 제거 · 언어 병기
-        · 의학 용어 표준화]
+        C["식별자 정합성 검사<br/>- 누락·중복 검사 의뢰 확인<br/>- FILE_NAME 파싱 및 SVS 매핑"]
+        D["슬라이드 수준 QC<br/>- 배경 마스킹<br/>- 아티팩트·포커스 점검"]
+        E["텍스트 정규화<br/>- HTML 제거 및 언어 병기<br/>- 의학 용어 표준화"]
     end
     subgraph 패치 생성 & 특성화
-        F[타일링/패치 추출
-        · 크기, 확대배율 설정
-        · 조직 마스크 기반 샘플링]
-        G[색상 보정 & 증강
-        · Macenko, Reinhard
-        · 기하/광학 증강]
-        H[패치 임베딩 생성
-        · CNN/ViT 사전학습 모델]
+        F["타일링·패치 추출<br/>- 크기·확대배율 설정<br/>- 조직 마스크 기반 샘플링"]
+        G["색상 보정 & 증강<br/>- Macenko, Reinhard<br/>- 기하·광학 증강"]
+        H["패치 임베딩 생성<br/>- CNN/ViT 사전학습 모델"]
     end
     subgraph 레이블링 & 학습 데이터셋 구축
-        I[슬라이드 라벨 결합
-        · 진단 텍스트 → 태스크 라벨
-        · 멀티라벨/타깃 정의]
-        J[멀티모달 페어링
-        · 보고서 문장 ↔ 패치 클러스터
-        · 스냅샷 정렬]
+        I["슬라이드 라벨 결합<br/>- 진단 텍스트 → 태스크 라벨<br/>- 멀티라벨·타깃 정의"]
+        J["멀티모달 페어링<br/>- 보고서 문장 ↔ 패치 클러스터<br/>- 스냅샷 정렬"]
     end
     subgraph 모델 학습 파이프라인
-        K[베이스라인 패치 분류
-        · Supervised CNN]
-        L[MIL/약지도 모델
-        · Attention MIL, CLAM, TOAD]
-        M[파운데이션 임베딩 활용
-        · UNI, CONCH, PathAlign]
-        N[리포트/QA 모델
-        · PathChat 스타일 멀티모달]
+        K["베이스라인 패치 분류<br/>- Supervised CNN"]
+        L["MIL·약지도 모델<br/>- Attention MIL, CLAM, TOAD"]
+        M["파운데이션 임베딩 활용<br/>- UNI, CONCH, PathAlign"]
+        N["리포트·QA 모델<br/>- PathChat 스타일 멀티모달"]
     end
     subgraph 검증 & 배포
-        O[평가
-        · ROC/FROC · Triage 효율
-        · 보고서 품질 리뷰]
-        P[모델 배포
-        · PACS/LIS 연동 · GPU 인퍼런스]
-        Q[운영 모니터링
-        · 데이터 드리프트 · 감사 로그]
+        O["평가<br/>- ROC/FROC · Triage 효율<br/>- 보고서 품질 리뷰"]
+        P["모델 배포<br/>- PACS/LIS 연동<br/>- GPU 인퍼런스"]
+        Q["운영 모니터링<br/>- 데이터 드리프트<br/>- 감사 로그"]
     end
 
     A --> C
@@ -103,21 +80,15 @@ flowchart LR
 ```mermaid
 flowchart LR
     subgraph 데이터 준비
-        A1[CAMELYON16 WSIs]
-        A2[병리사 ROI 주석]
+        A1["CAMELYON16 WSIs"]
+        A2["병리사 ROI 주석"]
     end
-    B1[512x512 패치 추출
-    · 조직 마스크 기반]
-    B2[데이터 증강
-    · 색상 · 회전 · 좌우반전]
-    C1[Inception-v3 학습
-    · 패치 수준 악성/정상 분류]
-    D1[슬라이딩 윈도우 적용
-    · 128픽셀 스트라이드]
-    E1[열지도 생성 & 후처리
-    · Connected Component 필터링]
-    F1[슬라이드 수준 결정
-    · 임계값 기반 악성 판별]
+    B1["512x512 패치 추출<br/>- 조직 마스크 기반"]
+    B2["데이터 증강<br/>- 색상 · 회전 · 좌우반전"]
+    C1["Inception-v3 학습<br/>- 패치 수준 악성·정상 분류"]
+    D1["슬라이딩 윈도우 적용<br/>- 128픽셀 스트라이드"]
+    E1["열지도 생성 & 후처리<br/>- Connected Component 필터링"]
+    F1["슬라이드 수준 결정<br/>- 임계값 기반 악성 판별"]
 
     A1 --> B1 --> B2 --> C1 --> D1 --> E1 --> F1
     A2 --> B1
@@ -129,16 +100,12 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    A3[WSI + 환자 보고서 라벨]
-    B3[타일 추출
-    · 224x224 패치
-    · Tissue detection 적용]
-    C3[ResNet-34 특징 추출]
-    D3[MIL Aggregator
-    · Max/Mean Pooling]
-    E3[슬라이드 수준 예측]
-    F3[임상 트리아지
-    · 고위험 슬라이드 우선 검토]
+    A3["WSI + 환자 보고서 라벨"]
+    B3["타일 추출<br/>- 224x224 패치<br/>- Tissue detection 적용"]
+    C3["ResNet-34 특징 추출"]
+    D3["MIL Aggregator<br/>- Max/Mean Pooling"]
+    E3["슬라이드 수준 예측"]
+    F3["임상 트리아지<br/>- 고위험 슬라이드 우선 검토"]
 
     A3 --> B3 --> C3 --> D3 --> E3 --> F3
 ```
@@ -148,17 +115,12 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    A4[조직 샘플 준비]
-    B4[WSI 스캐닝
-    · 고해상도 디지털화]
-    C4[이미지 저장 인프라
-    · PACS/클라우드]
-    D4[뷰어 & 주석 도구
-    · 병리사 워크스테이션]
-    E4[응용 영역
-    · 원격판독 · 교육 · QA]
-    F4[과제
-    · 초기 비용 · 워크플로 통합 · 규제]
+    A4["조직 샘플 준비"]
+    B4["WSI 스캐닝<br/>- 고해상도 디지털화"]
+    C4["이미지 저장 인프라<br/>- PACS/클라우드"]
+    D4["뷰어 & 주석 도구<br/>- 병리사 워크스테이션"]
+    E4["응용 영역<br/>- 원격판독 · 교육 · QA"]
+    F4["과제<br/>- 초기 비용 · 워크플로 통합 · 규제"]
 
     A4 --> B4 --> C4 --> D4 --> E4
     C4 --> F4
@@ -170,15 +132,12 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    A5[WSI + 슬라이드 라벨]
-    B5[패치 임베딩 추출
-    · ResNet-50 사전학습]
-    C5[Attention MIL 헤드]
-    D5[클러스터링 제약
-    · 양성/음성 인스턴스 분리]
-    E5[슬라이드 예측 + Heatmap]
-    F5[외부 도메인 적응
-    · 스마트폰 현미경]
+    A5["WSI + 슬라이드 라벨"]
+    B5["패치 임베딩 추출<br/>- ResNet-50 사전학습"]
+    C5["Attention MIL 헤드"]
+    D5["클러스터링 제약<br/>- 양성/음성 인스턴스 분리"]
+    E5["슬라이드 예측 + Heatmap"]
+    F5["외부 도메인 적응<br/>- 스마트폰 현미경"]
 
     A5 --> B5 --> C5 --> D5 --> E5
     E5 --> F5
@@ -190,17 +149,12 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    A6[다기관 WSI 데이터셋
-    · 17,486 학습]
-    B6[패치 임베딩 추출
-    · ResNet50]
-    C6[MIL 기반 TOAD 백본]
-    D6[다중 작업 헤드
-    · 원발 부위 예측
-    · 조직 유형 보조 태스크]
-    E6[Attention 기반 Heatmap]
-    F6[임상 보고
-    · Top-k 후보 · 설명 제공]
+    A6["다기관 WSI 데이터셋<br/>- 17,486 학습"]
+    B6["패치 임베딩 추출<br/>- ResNet50"]
+    C6["MIL 기반 TOAD 백본"]
+    D6["다중 작업 헤드<br/>- 원발 부위 예측<br/>- 조직 유형 보조 태스크"]
+    E6["Attention 기반 Heatmap"]
+    F6["임상 보고<br/>- Top-k 후보 · 설명 제공"]
 
     A6 --> B6 --> C6 --> D6 --> F6
     C6 --> E6 --> F6
@@ -212,16 +166,11 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    A7[WSI-리포트 쌍 35만+]
-    B7[PathSSL 패치 인코더]
-    C7[BLIP-2 멀티모달 조합
-    · Q-Former + LLM]
-    D7[크로스모달 정렬 학습
-    · Contrastive + ITM]
-    E7[응용
-    · 임베딩 검색
-    · 보고서 생성
-    · 질의응답]
+    A7["WSI-리포트 쌍 35만+"]
+    B7["PathSSL 패치 인코더"]
+    C7["BLIP-2 멀티모달 조합<br/>- Q-Former + LLM"]
+    D7["크로스모달 정렬 학습<br/>- Contrastive + ITM"]
+    E7["응용<br/>- 임베딩 검색<br/>- 보고서 생성<br/>- 질의응답"]
 
     A7 --> B7 --> C7 --> D7 --> E7
     A7 --> D7
@@ -232,16 +181,12 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    A8[Mass-100K 데이터셋
-    · 100,426 WSI]
-    B8[패치 추출 1억개]
-    C8[DINOv2 기반 ViT-L 사전학습]
-    D8[UNI 임베딩]
-    E8[다운스트림 과제 34개
-    · 분류 · 세분화 · 예측]
-    F8[응용
-    · 해상도 불변 분류
-    · Few-shot 프로토타입]
+    A8["Mass-100K 데이터셋<br/>- 100,426 WSI"]
+    B8["패치 추출 1억개"]
+    C8["DINOv2 기반 ViT-L 사전학습"]
+    D8["UNI 임베딩"]
+    E8["다운스트림 과제 34개<br/>- 분류 · 세분화 · 예측"]
+    F8["응용<br/>- 해상도 불변 분류<br/>- Few-shot 프로토타입"]
 
     A8 --> B8 --> C8 --> D8 --> E8 --> F8
 ```
@@ -251,18 +196,12 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    A9[WSI/현미경 이미지 + 텍스트 쌍]
-    B9[패치 임베딩 생성
-    · CONCH/PathAlign 기반]
-    C9[Instruction Tuning 데이터
-    · 45.6만 멀티모달 대화]
-    D9[멀티모달 LLM 파인튜닝
-    · PathChat]
-    E9[응용
-    · 케이스 토론
-    · QA · 보고서 초안]
-    F9[평가
-    · 병리사 선호도 비교]
+    A9["WSI/현미경 이미지 + 텍스트 쌍"]
+    B9["패치 임베딩 생성<br/>- CONCH/PathAlign 기반"]
+    C9["Instruction Tuning 데이터<br/>- 45.6만 멀티모달 대화"]
+    D9["멀티모달 LLM 파인튜닝<br/>- PathChat"]
+    E9["응용<br/>- 케이스 토론<br/>- QA · 보고서 초안"]
+    F9["평가<br/>- 병리사 선호도 비교"]
 
     A9 --> B9 --> D9
     C9 --> D9 --> E9 --> F9
@@ -273,13 +212,11 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    A10[117만 이미지-텍스트 쌍]
-    B10[CoCa 기반 듀얼 인코더]
-    C10[대규모 사전학습
-    · 대칭 크로스엔트로피]
-    D10[제로샷 평가 14개 벤치마크]
-    E10[다운스트림 활용
-    · 분류 · 세분화 · 검색 · 캡셔닝]
+    A10["117만 이미지-텍스트 쌍"]
+    B10["CoCa 기반 듀얼 인코더"]
+    C10["대규모 사전학습<br/>- 대칭 크로스엔트로피"]
+    D10["제로샷 평가 14개 벤치마크"]
+    E10["다운스트림 활용<br/>- 분류 · 세분화 · 검색 · 캡셔닝"]
 
     A10 --> B10 --> C10 --> D10 --> E10
 ```
