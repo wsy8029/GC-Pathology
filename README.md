@@ -9,6 +9,21 @@ GreenVet으로부터 전달받은 조직검사 메타데이터와 대용량 Whol
 - 서비스 유형은 대부분 `Histopathology (1 Site/Lesion)-국내`(38,581건)으로 단일 병변 조직검사가 주류이며, `site1`~`site4`까지 4개의 위치 코드가 존재합니다.
 - 병리 판독 텍스트(`DIAGNOSIS`, `GROSS_FINDINGS`, `MICROSCOPIC_FINDINGS`)와 스냅샷 이미지 URL(`SNAPSHOT`)이 풍부하게 제공되지만, `RESULT_PDF`는 48,680건에서 비어 있습니다.
 
+### 샘플 레코드 (상위 10건)
+
+| INSP_RQST_NO | FILE_NAME | INSP_SRVC_NM | DIAGNOSIS | SITE | SNAPSHOT |
+| --- | --- | --- | --- | --- | --- |
+| 20240101-113-0002 | S24-00001#1###3.svs | Histopathology (1 Site/Lesion)-국내 | Mast cell tumor (Well-differentiated), completely excised | site1 | https://ipeak.greenvet.co.kr/siteImage/17143/1-1.jpg |
+| 20240101-113-0002 | S24-00001#1###3.svs | Histopathology (1 Site/Lesion)-국내 | Mast cell tumor (Well-differentiated), completely excised | site1 | https://ipeak.greenvet.co.kr/siteImage/17143/1-2.jpg |
+| 20240101-121-0003 | S24-00003#1###8.svs | Histopathology (1 Site/Lesion)-국내 | Apocrine or mammary adenoma, completely excised, see Comments | site1 | https://ipeak.greenvet.co.kr/siteImage/17145/0003_01.JPG |
+| 20240101-121-0003 | S24-00003#1###8.svs | Histopathology (1 Site/Lesion)-국내 | Apocrine or mammary adenoma, completely excised, see Comments | site1 | https://ipeak.greenvet.co.kr/siteImage/17145/0003_02.JPG |
+| 20240101-102-0001 | S24-00018#1###2.svs | Histopathology (1 Site/Lesion)-국내 | Mammary duct ectasia, mastitis | site1 | https://ipeak.greenvet.co.kr/siteImage/17160/18_01.JPG |
+| 20240101-102-0001 | S24-00018#1###2.svs | Histopathology (1 Site/Lesion)-국내 | Mammary duct ectasia, mastitis | site1 | https://ipeak.greenvet.co.kr/siteImage/17160/18_02.JPG |
+| 20240101-102-0001 | S24-00018#1###2.svs | Histopathology (1 Site/Lesion)-국내 | Mammary duct ectasia, mastitis | site1 | https://ipeak.greenvet.co.kr/siteImage/17160/18_03.JPG |
+| 20240101-102-0001 | S24-00018#1###2.svs | Histopathology (1 Site/Lesion)-국내 | Mammary duct ectasia, mastitis | site1 | https://ipeak.greenvet.co.kr/siteImage/17160/18_04.JPG |
+| 20240101-119-0002 | S24-00020#1###4.svs\|S24-00020#1###3.svs | Histopathology (1 Site/Lesion)-국내 | 섬유종(Fibroma) | site1 | https://ipeak.greenvet.co.kr/siteImage/17162/24-20-1.jpg |
+| 20240101-119-0002 | S24-00020#1###4.svs\|S24-00020#1###3.svs | Histopathology (1 Site/Lesion)-국내 | 섬유종(Fibroma) | site1 | https://ipeak.greenvet.co.kr/siteImage/17162/24-20-2.jpg |
+
 ## End-to-end 파이프라인 도식
 WSI와 GreenVet Excel 메타데이터가 입력되어 모델 학습과 배포까지 도달하는 전체 단계를 아래와 같이 구성합니다.
 
