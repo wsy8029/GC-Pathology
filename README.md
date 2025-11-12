@@ -42,6 +42,12 @@ GreenVet으로부터 전달받은 조직검사 메타데이터와 대용량 Whol
 - 육안·현미경·코멘트 텍스트를 통합한 결과, "개" 언급이 33,118건, "고양이" 언급이 5,613건으로 확인되어 반려견 중심 데이터임을 보여줍니다.
 - 종 필드가 명시적으로 존재하지 않아 동물 종 태깅을 위한 규칙·모델 기반 명명 실체 인식(NER) 또는 키워드 매칭이 필요합니다.
 
+### CSV 파일 자산 요약
+| 파일명 | 행 수 | 주요 컬럼 | 설명 |
+| --- | --- | --- | --- |
+| `Data/조직검사 결과 매칭(2024)_utf8_pruned.csv` | 48,691 | `INSP_RQST_NO`, `FILE_NAME`, `DIAGNOSIS`, `GROSS_FINDINGS`, `MICROSCOPIC_FINDINGS`, `COMMENTS`, `SITE`, `SNAPSHOT` 등 | GreenVet 조직검사 원본 메타데이터(정제본). 의뢰 번호·슬라이드 식별자와 주요 서술형 병리 보고 컬럼을 포함합니다. |
+| `Data/조직검사 결과 매칭(2024)_coded.csv` | 50 | 위 원본 컬럼 + `Vet-ICD-O_Topography`, `Vet-ICD-O_Morphology`, `Specimen_Site_Normalized`, `Species` | Vet-ICD-O-canine-1 1판 기준으로 상위 50개 레코드를 수작업 매칭한 파생본. 병변 해부 위치 정규화와 확실히 식별 가능한 종(고양이/개)을 태깅했습니다. |
+
 ### 진단명 분포 (전체 5,950건)
 GreenVet 메타데이터에 등장하는 모든 진단명을 건수 순으로 정렬했습니다.
 
