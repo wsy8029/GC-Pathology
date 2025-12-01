@@ -1,123 +1,52 @@
 # WSI 양성/악성 분류 PoC (GIGAPATH 우선)
 
-본 문서는 그린벳 WSI 데이터로 양성/악성 분류 PoC를 수행하기 위한 계획을 정리합니다. 병리 특화 Foundation Model **GIGAPATH**를 1순위로 사용하고, 리소스나 해석 요구에 따라 **UNI/CONCH**를 차선으로 고려합니다.
+그린벳 WSI 데이터로 양성/악성 분류 PoC를 수행하는 과정과 현재 상태를 정리합니다. 임베딩은 병리 특화 Foundation Model **GIGAPATH**를 1순위로 사용하고, 필요 시 UNI/CONCH를 대안으로 고려합니다.
 
-## 1. 목표 및 성공 기준
-- **목표**: 병리 특화 임베딩을 도입해 소량 라벨 환경에서도 높은 양성/악성 분류 성능(AUC 0.95+)과 해석 가능한 heatmap을 제공.
-- **성공 기준**
-  - 내부 검증 셋에서 AUC ≥ 0.95, F1 ≥ 0.9
-  - 슬라이드별 heatmap 시각화 제공 및 병리사 블라인드 리뷰(정성 평가 ≥ 4/5)
-  - 추론 지연(1 WSI) 3분 이내(GPU 1대 기준), 패치 임베딩 캐싱 적용
+## 1. 최근 진행 결과 요약
+- **데이터/라벨**: `mammary_adenoma_vs_adenocarcinoma_only(2023).parquet` 라벨(`mammary_adenoma`, `mammary_adenocarcinoma`) 기준. 라벨 정규화 시 `adenoma/adenocarcinoma` 및 `mammary_adenoma/mammary_adenocarcinoma` 모두 매핑.
+- **특징량 소스**: `s3://gc-pathology/gv-level1-embedding/` 의 `.pt` 파일 48건을 RunPod로 동기화. PT 내부 키는 `layer_*_embed`만 존재해, 가장 높은 레이어를 자동 선택하는 로더로 수정.
+- **학습 설정**: TransMIL + positional encoding, fp16, max_tiles=8000, epochs=20, cosine LR, 자동 pos_weight. 좌표가 있으면 사용, 없으면 순수 임베딩 MIL.
+- **로그/출력**(원격): `/workspace/data/logs/mil_training.json`, `val_preds.csv`, `test_preds.csv`. 로컬에서 7번 셀 실행 시 원격 성능 요약을 출력.
+- **현재 병목**: 데이터 수(48 슬라이드)와 클래스 불균형/라벨 노이즈 가능성 → 일반화 한계가 크며 AUC/F1은 참고치로만 활용.
 
-## 2. 모델 선정 요약
-- **1순위: GIGAPATH**
-  - 병리 전용 초대규모 데이터로 학습되어 stain·기관 다양성 대응력이 높음.
-  - WSI용 패치 표현력이 우수해 MIL 헤드만으로도 PoC 기준 달성 가능성이 큼.
-  - ONNX/TensorRT 사례가 있어 추론 SLA(WSI당 <3분) 충족을 기대.
-- **차선책**
-  - **UNI**: DINOv2 기반 시각 전용. 메모리 제약이 클 때(임베딩 차원 1024) 또는 순수 시각 패턴 일반화가 필요할 때 선택.
-  - **CONCH**: 비전-언어 CoCa. 텍스트 조건 분류나 프롬프트 기반 해석이 필요할 때 유용하며 임베딩 차원(512)으로 캐싱 부담이 적음.
-- **검증 권고**: 세 모델 모두 동일 MIL 헤드 설정으로 100–200 슬라이드 서브셋을 실험하여 AUC/F1/추론 지연·임베딩 스토리지 사용량을 비교.
+## 2. 데이터 파이프라인
+1. **라벨 업로드**: 로컬 parquet → RunPod `/workspace/data/work/`.
+2. **S3 임베딩 동기화**: `RUN_S3_SYNC=True` 시 `.pt` 다운로드 → `/workspace/data/work/features/`.
+3. **Manifest 생성**: 라벨 stem(`FILE_NAME`, `INSP_RQST_NO`)과 PT stem(`*_gigapath` 제거)을 매칭, train/val/test split 기록.
+4. **학습/로그**: `train_mil.py`를 원격에 기록 후 학습. 결과는 `/workspace/data/logs`에 저장.
 
-## 3. 전체 로드맵 (Mermaid)
-```mermaid
-gantt
-    dateFormat  YYYY-MM-DD
-    title PoC 일정 (12주)
-    section 데이터
-    데이터 수집/동의/QA       :done,   des1, 2024-09-02, 2024-09-13
-    WSI 전처리/타일링 코드    :active, des2, 2024-09-16, 2024-10-04
-    section 모델
-    임베딩(GIGAPATH 우선) 추출:active, des3, 2024-09-23, 2024-10-11
-    MIL 헤드 학습·튜닝        :des4, 2024-10-07, 2024-10-25
-    section 평가/배포
-    내부 검증/병리사 리뷰     :des5, 2024-10-21, 2024-11-01
-    경량 추론·데모 UI         :des6, 2024-10-28, 2024-11-15
-```
+## 3. 모델/학습 상세
+- **입력 로더**: `load_feats_coords`가 `features/feats/embedding/last_layer_embed` 또는 `layer_<n>_embed` 중 가장 높은 레이어를 선택. 좌표 키(`coords/coord/locs/locations`)가 있으면 pos enc 적용.
+- **헤드**: TransMIL(기본), 대안으로 AttentionMIL/CLAM 선택 가능.
+- **손실/스케줄**: BCEWithLogits + pos_weight 자동 추정, AdamW + cosine, fp16 GradScaler.
+- **평가**: val/test split에 대해 AUC/AP/F1/ACC, 혼동행렬을 JSON 저장, 예측 CSV 별도 저장.
 
-## 4. 데이터 준비
-1. **소스**: Paper 폴더 논문 데이터 정리본 + 병리 WSI(SVS) + 메타데이터 CSV(`INSP_RQST_NO`, `FILE_NAME`, `DIAGNOSIS`, `SNAPSHOT`).
-2. **슬라이드 필터링**: 결손/스캔 오류 제거, 해상도·스캔 배치별 품질 체크.
-3. **라벨링**: `DIAGNOSIS` 기반 양성/악성 이진 라벨 생성 → 다중 진단 시 악성 우선 규칙 적용 → 전문가 검토.
-4. **데이터 분할**: 의뢰 번호(`INSP_RQST_NO`) 단위 stratified split (train/val/test=7/1/2)로 데이터 누수 방지.
-5. **보안/동의**: PHI 제거, 연구 동의서 추적, WSI/메타데이터 암호화 스토리지(S3 KMS 또는 on-prem 암호화 NAS) 사용.
+## 4. 실행 방법 (RunPod 노트북 `gigapath_runpod_modeling.ipynb`)
+1. 셀 2→4→6→8→10 순으로 실행해 환경/데이터 준비.
+2. 셀 12 실행해 학습 스크립트 갱신.
+3. 셀 14에서 `RUN_TRAINING=True`로 설정 후 학습 실행.
+4. 셀 7(성능 평가) 실행 시 원격 로그 요약 출력. 로그 없으면 먼저 학습 필요.
 
-## 5. 패치 추출(타일링)
-- **라이브러리**: OpenSlide + tifffile (Python), 병렬 처리는 `multiprocessing`/`dask` 활용.
-- **전처리**: 조직 검출(Otsu/HSV threshold) → 여백 제거 → 스테인 정규화(Macenko/Vahadane).
-- **타일링 파라미터**: 256–512 px, 20× 해상도 기준; 중첩 0–20%; 최소 조직 비율 60% 필터.
-- **출력**: `h5`/`zarr` 또는 폴더 구조(`slide_id/patch_x_y.png`)로 저장, 패치 메타(`x,y,level,scale`) 기록.
+## 5. 현재 성능 해석 및 한계
+- **샘플 수 48**로 매우 적고, 라벨 불확실성 존재 → AUC/F1는 변동성이 크며 과적합 위험이 높음.
+- PT에 좌표가 없는 경우 순수 임베딩 MIL로만 학습되어 위치 정보 활용이 제한됨.
+- 임베딩 키가 `layer_*_embed`만 있는 특이 구조 → 로더가 자동 선택하지만, 임베딩 추출 단계가 표준화되지 않았을 수 있음.
 
-```mermaid
-flowchart LR
-    A["WSI (SVS)"] --> B["조직 검출"] --> C["스테인 정규화"] --> D["패치 타일링"]
-    D --> E["패치 메타 저장<br/>(좌표, 배율)"]
-```
+## 6. 향후 개선 방향
+1. **데이터 확충/검증**
+   - 슬라이드 수 확대 및 클래스 밸런싱, 라벨 재검수.
+   - 좌표 포함 임베딩 재생성(가능 시)으로 pos enc 효과 확인.
+2. **모델/학습**
+   - Light 정규화: label smoothing, dropout/weight decay 튜닝, max_tiles 축소로 안정화.
+   - 다른 MIL 헤드(AttentionMIL/CLAM) 비교, threshold 최적화.
+3. **평가**
+   - 추가 val/test 슬라이드로 재분할, k-fold cross-validation 권장.
+   - RunPod 로그를 주기적으로 확인(노트북 7번 셀)하고 JSON/CSV를 로컬에 보관.
+4. **추론/데모**
+   - 학습 완료된 체크포인트로 heatmap 추출 스크립트 추가.
+   - 간단한 Gradio/Streamlit 뷰어에 heatmap/슬라이드 ID별 확률 표시.
 
-## 6. 파운데이션 임베딩 생성 (GIGAPATH 우선)
-- **모델 소스**
-  - GIGAPATH: 병리 특화 초거대 비전 모델(WSI 패치 대상).
-  - UNI: Harvard Mahmood Lab, DINOv2 기반 ViT-L (`mahmoodlab/UNI`).
-  - CONCH: Harvard Mahmood Lab, 비전-언어 대조학습 CoCa (`mahmoodlab/CONCH`).
-- **선정 근거(1순위 GIGAPATH)**
-  - 병리 전용 대규모 데이터로 학습되어 stain·기관 변동과 아티팩트에 견고.
-  - WSI 패치 임베딩 품질이 높아 MIL 헤드 학습량을 줄이고 초기 성능 달성 가능성↑.
-  - 추론 경량화(ONNX/TensorRT) 사례가 있어 SLA 충족 전망이 있음.
-- **전략**
-  - 파라미터 **고정(frozen)**, 패치 임베딩만 추출하여 데이터 효율성 극대화.
-  - 배치 추출 시 `amp/autocast`로 메모리 절감, `torch.compile=False` 권장.
-  - 임베딩 캐싱: `faiss` 인덱스 또는 parquet/h5 저장 후 재사용(임베딩 차원에 따라 저장 용량 산정).
-
-```mermaid
-flowchart TD
-    P["패치 PNG"] --> G["GIGAPATH 인코더"] --> I0["임베딩 캐시 (.pt/.parquet)"]
-    P --> U["UNI 인코더 (1024-d)"] --> I1["임베딩 캐시"]
-    P --> C["CONCH 인코더 (512-d)"] --> I2["임베딩 캐시"]
-    I0 & I1 & I2 --> M["MIL/Transformer 집계"]
-```
-
-## 7. 슬라이드 레벨 분류 모델
-1. **MIL 헤드 후보**: Attention MIL(CLAM 스타일), TransMIL, ABMIL.
-2. **입력**: 패치 임베딩 시퀀스(GIGAPATH/UNI/CONCH) + 좌표(치 인식용 positional encoding 옵션).
-3. **출력**: 슬라이드 양성 확률 및 패치 중요도 스코어(heatmap용).
-4. **정규화/규제**: dropout, weight decay, mixup of embeddings(optional).
-5. **학습 스케줄**: Cosine annealing LR, warmup 1–2 epoch, early stopping(patience=10) + SWA(optional).
-
-## 8. 학습 파이프라인 구현 체크리스트
-- [ ] 데이터 모듈: PyTorch Lightning `LightningDataModule`로 패치 임베딩 로더 구현.
-- [ ] 모델 모듈: `LightningModule`에 MIL 헤드, BCE/Focal Loss, AUROC metric 포함.
-- [ ] 로깅: WandB/Weights & Biases, 학습 곡선 및 heatmap 업로드.
-- [ ] 검증 스텝: 슬라이드 단위 AUROC/F1, per-class precision/recall, confusion matrix.
-- [ ] 추론 스크립트: 캐싱된 임베딩 입력 → 확률 + heatmap PNG 생성.
-
-## 9. 평가 및 해석 가능성
-- **메트릭**: AUROC, AUPRC, F1, Sensitivity at 95% Specificity.
-- **외부 검증**: 공개 데이터셋(CAMELYON16/17) 소규모 subset에 zero-shot/linear probe로 전이 성능 확인.
-- **Heatmap**: 패치 중요도 가우시안 blurring + 슬라이드 썸네일 overlay, 병리사 리뷰 루프 구축.
-- **오류 분석**: false positive/negative 슬라이드 패치 재검토, stain drift·아티팩트 상관 분석.
-
-## 10. 배포/데모
-- **경량 추론**: 임베딩 캐시 + ONNX Runtime 또는 TensorRT로 MIL 헤드 경량화.
-- **API**: FastAPI 엔드포인트(`/predict`, `/heatmap/{slide_id}`), 슬라이드 업로드 시 비동기 큐(Celery/RQ)로 패치 추출.
-- **UI 데모**: Streamlit/Gradio 기반 대시보드 – 슬라이드 썸네일, heatmap 토글, 패치별 확률 테이블 제공.
-- **모니터링**: 추론 지연, 입력 해상도/스테인 분포 드리프트 감지, 실패 슬라이드 재처리 큐.
-
-## 11. 리스크 및 완화
-- **GPU 메모리 초과**: 타일 배치 크기 축소, gradient checkpointing, AMP 사용.
-- **스테인 변동**: 정규화 + ColorJitter augmentation, slide-wise normalization 통계 재계산.
-- **라벨 노이즈**: 전문가 리뷰, label smoothing, asymmetric loss.
-- **도메인 차이**: 도메인 적응(MMD/Coral) 또는 슬라이드 스타일 전환(CycleGAN) 실험.
-
-## 12. 실행 우선순위 (RICE)
-1. **패치 타일링 & 임베딩 캐싱** (Reach 높음, Effort 중) – 주차 1–3
-2. **MIL 헤드 학습 & heatmap** (Impact 높음) – 주차 3–6
-3. **데모 UI + API** (Confidence 중) – 주차 7–9
-4. **외부 데이터 전이/검증** (Effort 중) – 주차 9–10
-5. **경량화/배포** (Impact 중) – 주차 10–12
-
-## 13. 참고 리소스
-- **GIGAPATH**: 병리 특화 초대규모 비전 모델(WSI 패치 대상), ONNX/TensorRT 활용 사례 다수.
-- **UNI**: Mahmood Lab, *Nature Medicine 2024* – 대규모 병리 패치 self-supervised 사전학습, Hugging Face `mahmoodlab/UNI`.
-- **CONCH**: Mahmood Lab, *Nature Medicine 2024* – 비전-언어 대조학습 CoCa 변형, Hugging Face `mahmoodlab/CONCH`.
-- **타일링/패치 파이프라인**: CLAM, TransMIL, OpenSlide 예제 코드.
-- **최적화**: PyTorch AMP, ONNX Runtime, TensorRT, faiss 캐싱.
+## 7. 참고 리소스
+- GIGAPATH, UNI, CONCH 원본 리포와 논문 (병리 특화 임베딩).
+- MIL 구현 예제: TransMIL, CLAM, ABMIL.
+- 추론 최적화: ONNX Runtime, TensorRT, faiss 캐싱.
