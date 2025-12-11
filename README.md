@@ -18,123 +18,69 @@ GreenVet으로부터 전달받은 조직검사 메타데이터와 대용량 Whol
 
 ## GreenVet 데이터 요약
 ### 데이터 구조 및 레코드 현황
-- 48,692개의 행이 11개 컬럼으로 구성되어 있으며, 16,943건의 고유 검사 의뢰 번호(`INSP_RQST_NO`)와 16,949개의 고유 슬라이드 식별자(`FILE_NAME`)가 존재합니다.
-- 레코드는 슬라이드/스냅샷 단위로 저장되어 동일 의뢰가 평균 2.87행(중앙값 2행, 75% 분위수 4행, 최대 18행)으로 확장됩니다.
-- 동일 의뢰 내 다중 슬라이드를 고려하면 슬라이드 수는 의뢰당 평균 1.40장(최대 10장)이며, 전체 의뢰 중 4,170건이 2장 이상 슬라이드를 포함합니다.
-- 고유 검사 의뢰 16,943건 중 1,581건(9.3%)은 상이한 진단 텍스트가 2개 이상 기록되어 있으며, 최대 5개의 진단이 한 의뢰에 병기되어 있습니다.
-- 스냅샷 URL은 48,690건에서 제공되어 영상-텍스트 매칭이 용이하며, `RESULT_PDF`는 48,680건이 결측으로 텍스트 중심의 리포트 구조임을 시사합니다.
+- 2023/2024년 parquet 파일을 결합해 중복 행을 제거한 결과, 총 82,319개의 행과 11개 컬럼이 존재합니다. 고유 검사 의뢰 번호(`INSP_RQST_NO`)는 26,189건, 고유 슬라이드 식별자(`FILE_NAME`)는 26,198개입니다.
+- 연도별로는 2023년 26,007행, 2024년 56,312행으로, 중복 행 15,062개를 제거한 뒤에도 최근 연도 데이터 비중이 높습니다.
+- 레코드는 슬라이드/스냅샷 단위로 저장되어 동일 의뢰가 평균 3.14행(중앙값 2행, 75% 분위수 4행, 95% 분위수 7행, 최대 24행)으로 확장됩니다.
+- `FILE_NAME` 내 `|` 구분자를 활용해 슬라이드 수를 합산하면 의뢰당 평균 5.36장(중앙값 2장, 75% 분위수 6장, 95% 분위수 18장, 99% 분위수 40장, 최대 216장)으로, 고슬라이드 의뢰가 소수 존재합니다. 다중 슬라이드 행은 31,908건이며 6,581건의 검사 의뢰가 해당됩니다.
+- 스냅샷 URL 결측은 3건뿐이며, `RESULT_PDF`는 82,301건에서 결측으로 텍스트 중심 리포트임을 확인할 수 있습니다.
 
 ### 서비스 유형 및 해부 부위 분포
-- 검사 서비스는 `Histopathology (1 Site/Lesion)-국내` 38,581건(79.2%), `Histopathology (2 Site/Lesion)-국내` 7,946건(16.3%), `Histopathology (3 Site/Lesion)-국내` 1,777건(3.6%), `Histopathology (4 Site/Lesion)-국내` 388건(0.8%)으로 구성되어 단일 병변 조직검사가 대부분을 차지합니다.
-- 위치 코드는 `site1` 43,465건(89.3%), `site2` 4,446건(9.1%), `site3` 686건(1.4%), `site4` 95건(0.2%) 순으로 1차 위치 정보가 집중되어 있습니다.
+- 검사 서비스는 `Histopathology (1 Site/Lesion)-국내` 65,209건(79.2%), `Histopathology (2 Site/Lesion)-국내` 13,094건(15.9%), `Histopathology (3 Site/Lesion)-국내` 3,165건(3.8%), `Histopathology (4 Site/Lesion)-국내` 849건(1.0%)으로 단일 병변 검사가 주를 이룹니다.
+- 위치 코드는 `site1` 73,410건(89.2%), `site2` 7,468건(9.1%), `site3` 1,233건(1.5%), `site4` 208건(0.3%) 순으로 분포합니다.
 
 ### 슬라이드 및 이미지 리소스
-- `FILE_NAME`에 `|`가 포함된 다중 슬라이드 행은 18,212건이며, 4,166건의 검사 의뢰가 해당 패턴을 보입니다.
-- 검사 의뢰-슬라이드 매핑 테이블에서 슬라이드 수 분포는 90% 분위수가 2장, 95% 분위수가 3장, 99% 분위수가 5장으로 확인되어 고슬라이드 의뢰는 제한적입니다.
-- 스냅샷 URL 결측은 2건에 불과하여 WSI 썸네일 기반 QA 및 지능형 뷰어 구축에 활용할 수 있습니다.
+- `FILE_NAME`에 `|`가 포함된 다중 슬라이드 행 31,908건을 기준으로 6,581건의 검사 의뢰가 복수 슬라이드를 포함합니다.
+- 스냅샷 URL이 거의 전량 제공되므로 WSI 썸네일 기반 QA, 패치 시각화, 웹 뷰어 구축에 활용 가능합니다.
 
 ### 텍스트 라벨 품질
-- 진단(`DIAGNOSIS`) 평균 길이는 42.7자(최대 342자)로 핵심 라벨이 간결하게 정리되어 있으며, 현미경 소견(`MICROSCOPIC_FINDINGS`)과 코멘트(`COMMENTS`)는 각각 평균 343자, 372자로 상세 서술이 풍부합니다.
-- 육안 소견(`GROSS_FINDINGS`)은 평균 118자로 템플릿 기반 서술이 일정하며, 전체 텍스트 컬럼에 결측이 없어 지도 학습 라벨 품질이 높습니다.
+- 진단(`DIAGNOSIS`) 평균 길이는 43.3자(최대 342자)이며, 육안 소견(`GROSS_FINDINGS`) 평균은 119.2자(최대 332자), 현미경 소견(`MICROSCOPIC_FINDINGS`) 평균은 347.2자(최대 1,460자), 코멘트(`COMMENTS`) 평균은 375.7자(최대 1,885자)입니다.
 - 진단명은 영어/한글 혼용, 소견 및 코멘트는 한국어 중심으로 기록되어 있어 멀티링구얼 전처리 전략이 요구됩니다.
 
 ### 동물 종 단서
-- 육안·현미경·코멘트 텍스트를 정규화한 뒤 숫자 단위 표현(예: "두 개", "3개의")을 제외하는 규칙 기반 토큰 필터를 적용해 종 키워드를 검출한 결과, 개 관련 서술이 24,255건(이 중 개·고양이 동시 언급 2,421건 포함), 고양이 관련 서술이 6,011건으로 집계되었고 종 미기재 건은 20,847건으로 확인되어 반려견 중심 데이터 분포가 유지됩니다.
-- 종 필드가 명시적으로 존재하지 않아 동물 종 태깅을 위한 규칙·모델 기반 명명 실체 인식(NER) 또는 키워드 매칭이 필요합니다.
+- 육안·현미경·코멘트 텍스트에서 숫자 토큰을 제거한 뒤 `개/강아지/canine/dog`, `고양이/feline/cat` 키워드를 탐지한 결과, 개 관련 서술이 13,584건(개·고양이 동시 언급 3,201건 포함), 고양이 관련 서술이 11,451건이며 종 미기재 건은 60,485건으로 집계됩니다.
+- 종 필드가 명시적으로 존재하지 않아 규칙·모델 기반 명명 실체 인식(NER) 혹은 키워드 매칭을 통한 보완이 필요합니다.
 
-### CSV 파일 자산 요약
+### CSV/Parquet 파일 자산 요약
 | 파일명 | 행 수 | 주요 컬럼 | 설명 |
 | --- | --- | --- | --- |
-| `Data/조직검사 결과 매칭(2024)_utf8_pruned.csv` | 48,691 | `INSP_RQST_NO`, `FILE_NAME`, `DIAGNOSIS`, `GROSS_FINDINGS`, `MICROSCOPIC_FINDINGS`, `COMMENTS`, `SITE`, `SNAPSHOT` 등 | GreenVet 조직검사 원본 메타데이터(정제본). 의뢰 번호·슬라이드 식별자와 주요 서술형 병리 보고 컬럼을 포함합니다. |
-| `Data/조직검사 결과 매칭(2024)_coded.csv` | 50 | 위 원본 컬럼 + `Vet-ICD-O_Topography`, `Vet-ICD-O_Morphology`, `Specimen_Site_Normalized`, `Species` | Vet-ICD-O-canine-1 1판 기준으로 상위 50개 레코드를 수작업 매칭한 파생본. 병변 해부 위치 정규화와 확실히 식별 가능한 종(고양이/개)을 태깅했습니다. |
+| `Data/조직검사 결과 매칭(2023)_utf8_pruned.parquet` | 48,689 | `INSP_RQST_NO`, `FILE_NAME`, `DIAGNOSIS`, `GROSS_FINDINGS`, `MICROSCOPIC_FINDINGS`, `COMMENTS`, `SITE`, `SNAPSHOT` 등 | 2023년 제공 메타데이터 정제본. 2024 파일과 기간 중첩이 있어 결합 시 중복 제거가 필요합니다. |
+| `Data/조직검사 결과 매칭(2024)_utf8_pruned.parquet` | 48,692 | 동일 컬럼 | 2024년 제공 메타데이터 정제본. 2023본과 합산 후 중복 제거 시 82,319건의 고유 행을 확보할 수 있습니다. |
+| `Data/조직검사 결과 매칭(2024)_coded.csv` | 50 | 위 원본 컬럼 + `Vet-ICD-O_Topography`, `Vet-ICD-O_Morphology`, `Specimen_Site_Normalized`, `Species` | Vet-ICD-O-canine-1 1판 기준 상위 50개 레코드 수작업 매칭본. 병변 해부 위치 정규화와 확실히 식별 가능한 종(고양이/개)을 태깅했습니다. |
 
-### 진단명 분포 (전체 5,950건)
-GreenVet 메타데이터에 등장하는 모든 진단명을 건수 순으로 정렬했습니다.
+수작업 매핑 CSV 중 태깅이 적용된 예시는 아래와 같습니다(50건 전체는 `Data/조직검사 결과 매칭(2024)_coded.csv` 참조).
+
+| INSP_RQST_NO | Diagnosis | Vet-ICD-O Topography | Vet-ICD-O Morphology | Specimen Site (Normalized) | Species |
+| --- | --- | --- | --- | --- | --- |
+| 20240101-113-0002 | Mast cell tumor (Well-differentiated), completely excised | C44.7 (Skin of hindlimb) | 9740/1 (Mastocytoma, NOS) | Skin, left hindlimb flank | Cat |
+| 20240101-102-0001 | Mammary duct ectasia, mastitis | C50.9 (Mammary gland, NOS) | N/A duct ectasia (Duct ectasia with mastitis (non-neoplastic)) | Mammary chain, multifocal | Cat |
+| 20240101-126-0014 | Pulmonary papillary adenocarcinoma, grade 1 (well differentiated) | C34.2 (Middle lobe, lung) | 8260/3 (Papillary renal cell carcinoma) | Right middle lung lobe mass | Dog |
+
+### 진단명 분포 (상위 20건)
+GreenVet 메타데이터 전체(중복 제거 82,319행)의 진단명 등장 빈도를 상위 20개까지 정렬했습니다.
 
 | 순위 | 진단명 | 건수 |
 | --- | --- | --- |
-| 1 | Subcutaneous lipoma | 1198 |
-| 2 | Mammary complex adenoma, completely excised | 739 |
-| 3 | Trichoblastoma, completely excised | 734 |
-| 4 | Sebaceous adenoma, completely excised | 613 |
-| 5 | Cutaneous histiocytoma, completely excised | 546 |
-| 6 | Mammary adenoma, complex type, completely excised | 471 |
-| 7 | Mammary benign mixed tumor, completely excised | 466 |
-| 8 | Follicular cyst, completely excised | 435 |
-| 9 | Mast cell tumor (Well-differentiated) | 403 |
-| 10 | Peripheral odontogenic fibroma | 381 |
-| 11 | Mammary gland adenoma, completely excised | 356 |
-| 12 | Peripheral odontogenic fibroma with osseous metaplasia | 300 |
-| 13 | Lymphoid nodular hyperplasia | 291 |
-| 14 | Mammary gland adenoma, simple type, completely excised | 286 |
-| 15 | Lipoma | 285 |
-| 16 | Benign mammary mixed tumor, completely excised | 263 |
-| 17 | Splenic hemangiosarcoma | 255 |
-| 18 | Subcutaneous lipoma, completely excised | 251 |
-| 19 | Complex nodular hyperplasia | 243 |
-| 20 | Oral melanoma | 237 |
-| 21 | Mast cell tumor, well-differentiated, completely excised | 228 |
-| 22 | Trichoblastoma | 222 |
-| 23 | Cutaneous mast cell tumor (Well-differentiated type), completely excised | 209 |
-| 24 | Soft tissue sarcoma, grade II | 206 |
-| 25 | Splenic nodular hyperplasia (complex type) | 205 |
-| 26 | Sebaceous epithelioma, completely excised | 192 |
-| 27 | Hepatoid gland adenoma | 191 |
-| 28 | Mammary mixed tumor (Benign) | 185 |
-| 29 | Gingival hyperplasia, gingivitis | 182 |
-| 30 | Squamous cell carcinoma | 177 |
-| 31 | Panniculitis with septal fibrosis | 177 |
-| 32 | Infundibular keratinizing acanthoma, completely excised | 172 |
-| 33 | Mammary gland adenoma, complex type, completely excised | 172 |
-| 34 | Mammary adenoma, simple type, completely excised | 172 |
-| 35 | Panniculitis | 171 |
-| 36 | Mast cell tumor (Low-grade / Grade 2) | 169 |
-| 37 | Gingival hyperplasia | 161 |
-| 38 | Splenic stromal sarcoma | 157 |
-| 39 | Soft tissue sarcoma, Grade 2 | 151 |
-| 40 | Cutaneous mast cell tumor (Well-differentiated type) | 142 |
-| 41 | Cutaneous plasmacytoma | 140 |
-| 42 | Traumatic panniculitis | 139 |
-| 43 | Mammary benign mixed tumor | 138 |
-| 44 | Fibroadnexal hamartoma, completely excised | 137 |
-| 45 | Gingival hyperplasia with chronic gingivitis | 135 |
-| 46 | Apocrine cyst, completely excised | 135 |
-| 47 | Sebaceous adenoma | 134 |
-| 48 | Meibomian adenoma, completely excised | 134 |
-| 49 | Cutaneous histiocytoma | 133 |
-| 50 | Fibroadnexal hamartoma (dysplasia), completely excised | 130 |
+| 1 | Subcutaneous lipoma | 1,711 |
+| 2 | Trichoblastoma, completely excised | 1,093 |
+| 3 | Mammary complex adenoma, completely excised | 986 |
+| 4 | Sebaceous adenoma, completely excised | 940 |
+| 5 | Mammary adenoma, complex type, completely excised | 833 |
+| 6 | Cutaneous histiocytoma, completely excised | 801 |
+| 7 | Lipoma | 731 |
+| 8 | Mammary benign mixed tumor, completely excised | 629 |
+| 9 | Follicular cyst, completely excised | 597 |
+| 10 | Mammary gland adenoma, completely excised | 544 |
+| 11 | Splenic hemangiosarcoma | 535 |
+| 12 | Mast cell tumor (Well-differentiated) | 534 |
+| 13 | Peripheral odontogenic fibroma | 504 |
+| 14 | Subcutaneous lipoma, completely excised | 492 |
+| 15 | Benign mammary mixed tumor, completely excised | 432 |
+| 16 | Mast cell tumor, well-differentiated, completely excised | 410 |
+| 17 | Lymphoid nodular hyperplasia | 402 |
+| 18 | Peripheral odontogenic fibroma with osseous metaplasia | 400 |
+| 19 | Cutaneous mast cell tumor (well-differentiated) | 391 |
+| 20 | Trichoblastoma | 351 |
 
-### 샘플 레코드 (상위 10건)
-
-| INSP_RQST_NO | FOLDER | FILE_NAME | INSP_SRVC_NM | RESULT_PDF | DIAGNOSIS | GROSS_FINDINGS | COMMENTS | MICROSCOPIC_FINDINGS | SITE | SNAPSHOT |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 20240101-113-0002 | S24-00001 | S24-00001#1###3.svs | Histopathology (1 Site/Lesion)-국내 |  | Mast cell tumor (Well-differentiated), completely excised | Specimen: Skin<br>Appearance: 단독 single,soft,유동적 movable, Size: 0.5X0.5X0.5cm<br>Operation: excisional<br>Recurrence: N, Lymph: N<br> | 의뢰된 좌측 후지-옆구리 쪽 피부 종양은 비만세포종(mast cell tumor)으로 확인되었습니다. Mast cell tumor는 고양이 피부 종양의 약 21%를 차지하며, 분화 정도나 조직학적 분류와는 관계없이 80% 정도의 증례에서 양성 종양의 경과를 나타냅니다. 개의 cut… | 의뢰된 조직의 장축면을 제작-판독하였습니다. 경계가 비교적 명확한 직경 약 4.3 mm의 mass는 원형 세포로 구성되어 있었으며, 종양세포는 잘 분화된 비만세포로 확인되었습니다. 종양 세포는 metachromic granule을 가진 난원형의 세포로 핵은 주로 중앙에 위치하고 있… | site1 | https://ipeak.greenvet.co.kr/siteImage/17143/1-1.jpg |
-| 20240101-113-0002 | S24-00001 | S24-00001#1###3.svs | Histopathology (1 Site/Lesion)-국내 |  | Mast cell tumor (Well-differentiated), completely excised | Specimen: Skin<br>Appearance: 단독 single,soft,유동적 movable, Size: 0.5X0.5X0.5cm<br>Operation: excisional<br>Recurrence: N, Lymph: N<br> | 의뢰된 좌측 후지-옆구리 쪽 피부 종양은 비만세포종(mast cell tumor)으로 확인되었습니다. Mast cell tumor는 고양이 피부 종양의 약 21%를 차지하며, 분화 정도나 조직학적 분류와는 관계없이 80% 정도의 증례에서 양성 종양의 경과를 나타냅니다. 개의 cut… | 의뢰된 조직의 장축면을 제작-판독하였습니다. 경계가 비교적 명확한 직경 약 4.3 mm의 mass는 원형 세포로 구성되어 있었으며, 종양세포는 잘 분화된 비만세포로 확인되었습니다. 종양 세포는 metachromic granule을 가진 난원형의 세포로 핵은 주로 중앙에 위치하고 있… | site1 | https://ipeak.greenvet.co.kr/siteImage/17143/1-2.jpg |
-| 20240101-121-0003 | S24-00003 | S24-00003#1###8.svs | Histopathology (1 Site/Lesion)-국내 |  | Apocrine or mammary adenoma, completely excised, see Comments | Specimen: Other(생식기 주변 피하)<br>Appearance: 단독 single, Size: 1X1X1cm<br>Operation: excisional<br>Recurrence: N, Lymph: N<br> | 의뢰된 생식기 주위 피하 종괴는 아포크린샘 유래의 양성 종양으로 진단되었습니다. 피부에 분포하는 땀샘과 유선, 항문낭샘 등이 모두 아포크린샘에 속하며, 해부학적인 위치와 주위 정상 조직과의 연관성을 토대로 정확한 분류가 가능합니다. 해당 증례의 경우 주위 정상 조직은 포함되지 않았… | 샘 유래의 상피세포로 이루어진 한 개의 종양성 종괴입니다. 종양세포는 대부분 잘 분화되어 균일한 크기와 형태를 보이는 입방형 상피세포입니다. 세포 두 층 두께의 세관 구조를 형성하며 증식하였고, 일부 세관은 확장되었습니다. 전반적으로 방추형의 근상피세포가 함께 증식하였고, 핵의 이… | site1 | https://ipeak.greenvet.co.kr/siteImage/17145/0003_01.JPG |
-| 20240101-121-0003 | S24-00003 | S24-00003#1###8.svs | Histopathology (1 Site/Lesion)-국내 |  | Apocrine or mammary adenoma, completely excised, see Comments | Specimen: Other(생식기 주변 피하)<br>Appearance: 단독 single, Size: 1X1X1cm<br>Operation: excisional<br>Recurrence: N, Lymph: N<br> | 의뢰된 생식기 주위 피하 종괴는 아포크린샘 유래의 양성 종양으로 진단되었습니다. 피부에 분포하는 땀샘과 유선, 항문낭샘 등이 모두 아포크린샘에 속하며, 해부학적인 위치와 주위 정상 조직과의 연관성을 토대로 정확한 분류가 가능합니다. 해당 증례의 경우 주위 정상 조직은 포함되지 않았… | 샘 유래의 상피세포로 이루어진 한 개의 종양성 종괴입니다. 종양세포는 대부분 잘 분화되어 균일한 크기와 형태를 보이는 입방형 상피세포입니다. 세포 두 층 두께의 세관 구조를 형성하며 증식하였고, 일부 세관은 확장되었습니다. 전반적으로 방추형의 근상피세포가 함께 증식하였고, 핵의 이… | site1 | https://ipeak.greenvet.co.kr/siteImage/17145/0003_02.JPG |
-| 20240101-102-0001 | S24-00018 | S24-00018#1###2.svs | Histopathology (1 Site/Lesion)-국내 |  | Mammary duct ectasia, mastitis | Specimen: Mammary<br>Appearance: 다발 multiple, Size: 0.5X0.5X0.3cm<br>Operation: excisional<br>Recurrence: N, Lymph: N<br> | Mammary duct ectasia는 도관이 확장된 병변으로, 주로 중성화하지 않은 암컷에서 발정주기에 따라 성호르몬의 영향으로 발생하며, 유선종양 주위에 형성되기도 합니다.<br>의뢰된 유선 검체에서는 염증을 동반하며 확장된 도관이 주된 병변으로 확인됩니다. 다만, 현재 유선… | 의뢰된 유선 검체 저배율 시야에서는 다수의 유선 도관 확장이 특징적인 소견으로 확인됩니다. 병변의 경계는 적절히 확보되었습니다. 확장된 유선 사이로는 mild하게 과증식한 유선 조직이 분포하고 있으며, 기질로 염증이 동반되었습니다. 병변 주위로는 정상 유선 조직이 분포하고 있습니다… | site1 | https://ipeak.greenvet.co.kr/siteImage/17160/18_01.JPG |
-| 20240101-102-0001 | S24-00018 | S24-00018#1###2.svs | Histopathology (1 Site/Lesion)-국내 |  | Mammary duct ectasia, mastitis | Specimen: Mammary<br>Appearance: 다발 multiple, Size: 0.5X0.5X0.3cm<br>Operation: excisional<br>Recurrence: N, Lymph: N<br> | Mammary duct ectasia는 도관이 확장된 병변으로, 주로 중성화하지 않은 암컷에서 발정주기에 따라 성호르몬의 영향으로 발생하며, 유선종양 주위에 형성되기도 합니다.<br>의뢰된 유선 검체에서는 염증을 동반하며 확장된 도관이 주된 병변으로 확인됩니다. 다만, 현재 유선… | 의뢰된 유선 검체 저배율 시야에서는 다수의 유선 도관 확장이 특징적인 소견으로 확인됩니다. 병변의 경계는 적절히 확보되었습니다. 확장된 유선 사이로는 mild하게 과증식한 유선 조직이 분포하고 있으며, 기질로 염증이 동반되었습니다. 병변 주위로는 정상 유선 조직이 분포하고 있습니다… | site1 | https://ipeak.greenvet.co.kr/siteImage/17160/18_02.JPG |
-| 20240101-102-0001 | S24-00018 | S24-00018#1###2.svs | Histopathology (1 Site/Lesion)-국내 |  | Mammary duct ectasia, mastitis | Specimen: Mammary<br>Appearance: 다발 multiple, Size: 0.5X0.5X0.3cm<br>Operation: excisional<br>Recurrence: N, Lymph: N<br> | Mammary duct ectasia는 도관이 확장된 병변으로, 주로 중성화하지 않은 암컷에서 발정주기에 따라 성호르몬의 영향으로 발생하며, 유선종양 주위에 형성되기도 합니다.<br>의뢰된 유선 검체에서는 염증을 동반하며 확장된 도관이 주된 병변으로 확인됩니다. 다만, 현재 유선… | 의뢰된 유선 검체 저배율 시야에서는 다수의 유선 도관 확장이 특징적인 소견으로 확인됩니다. 병변의 경계는 적절히 확보되었습니다. 확장된 유선 사이로는 mild하게 과증식한 유선 조직이 분포하고 있으며, 기질로 염증이 동반되었습니다. 병변 주위로는 정상 유선 조직이 분포하고 있습니다… | site1 | https://ipeak.greenvet.co.kr/siteImage/17160/18_03.JPG |
-| 20240101-102-0001 | S24-00018 | S24-00018#1###2.svs | Histopathology (1 Site/Lesion)-국내 |  | Mammary duct ectasia, mastitis | Specimen: Mammary<br>Appearance: 다발 multiple, Size: 0.5X0.5X0.3cm<br>Operation: excisional<br>Recurrence: N, Lymph: N<br> | Mammary duct ectasia는 도관이 확장된 병변으로, 주로 중성화하지 않은 암컷에서 발정주기에 따라 성호르몬의 영향으로 발생하며, 유선종양 위에 형성되기도 합니다.<br>의뢰된 유선 검체에서는 염증을 동반하며 확장된 도관이 주된 병변으로 확인됩니다. 다만, 현재 유선… | 의뢰된 유선 검체 저배율 시야에서는 다수의 유선 도관 확장이 특징적인 소견으로 확인됩니다. 병변의 경계는 적절히 확보되었습니다. 확장된 유선 사이로는 mild하게 과증식한 유선 조직이 분포하고 있으며, 기질로 염증이 동반되었습니다. 병변 주위로는 정상 유선 조직이 분포하고 있습니다… | site1 | https://ipeak.greenvet.co.kr/siteImage/17160/18_04.JPG |
-| 20240101-119-0002 | S24-00020 | S24-00020#1###4.svs\|S24-00020#1###3.svs | Histopathology (1 Site/Lesion)-국내 |  | 섬유종(Fibroma) | Specimen: Skin<br>Appearance: 단독 single, Size: 0.1X0.1X0.1cm<br>Operation: excisional<br>Recurrence: N, Lymph: N<br> | 섬유아세포에서 유래하는 양성종양입니다. 일부 세포에서 멜라닌 색소처럼 보이는 검은색소가 관찰되기도 하지만 전반적인 특징이 흑색종은 아닌 것으로 판단됩니다. 의뢰된 종괴의 경계부위가 명확히 다 관찰되지는 않으므로, 재발에 대한 모니터링이 추천됩니다. | 진피층에서 방추형의 종양세포 침윤이 관찰되는데, 종양세포는 상피층을 침습하지 않으며, 피막화로 구분되어 있지는 않으나 주위 결합조직과 어느 정도 구분되는 양상입니다. 종양세포는 길죽한 타원형 또는 방추형의 핵을 가지며, 콜라겐이 풍부하고 일정 방향으로 배열하는 모습을 보입니다. 종… | site1 | https://ipeak.greenvet.co.kr/siteImage/17162/24-20-1.jpg |
-| 20240101-119-0002 | S24-00020 | S24-00020#1###4.svs\|S24-00020#1###3.svs | Histopathology (1 Site/Lesion)-국내 |  | 섬유종(Fibroma) | Specimen: Skin<br>Appearance: 단독 single, Size: 0.1X0.1X0.1cm<br>Operation: excisional<br>Recurrence: N, Lymph: N<br> | 섬유아세포에서 유래하는 양성종양입니다. 일부 세포에서 멜라닌 색소처럼 보이는 검은색소가 관찰되기도 하지만 전반적인 특징이 흑색종은 아닌 것으로 판단됩니다. 의뢰된 종괴의 경계부위가 명확히 다 관찰되지는 않으므로, 재발에 대한 모니터링이 추천됩니다. | 진피층에서 방추형의 종양세포 침윤이 관찰되는데, 종양세포는 상피층을 침습하지 않으며, 피막화로 구분되어 있지는 않으나 주위 결합조직과 어느 정도 구분되는 양상입니다. 종양세포는 길죽한 타원형 또는 방추형의 핵을 가지며, 콜라겐이 풍부하고 일정 방향으로 배열하는 모습을 보입니다. 종… | site1 | https://ipeak.greenvet.co.kr/siteImage/17162/24-20-2.jpg |
-
-#### 다중 진단 의뢰 예시 (12건)
-
-| INSP_RQST_NO | FOLDER | FILE_NAME | INSP_SRVC_NM | RESULT_PDF | DIAGNOSIS | GROSS_FINDINGS | COMMENTS | MICROSCOPIC_FINDINGS | SITE | SNAPSHOT |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 20240131-154-0003 | S24-01295 | S24-01295#1###6.svs\|S24-01295#2###7.svs\|S24-01295#3###8.svs\|S24-01295#4###9.svs | Histopathology (4 Site/Lesion)-국내 |  | Brunn's nest with cystitis suspect | Specimen: Other(bladder)<br>Appearance: 다발 multiple,산재 diffuse,hard, Size: 1X1X1cm<br>Operation: incisional<br>Recurrence: N, Lymph: N<br> | 의뢰하신 개의 방광조직에 대한 검사결과, 조직의 심한 괴사로 인하여 세포학적인 형태의 관찰이 어려워 명확한 진단이 어려운 상황입니다. 다만, 괴사로 인한 석회침착이 관찰되고, 다양한 정도의 방광샘이 관찰되어, 방광점막의 증식성 변화가 있었던 것으로 … | 의뢰된 방광조직은 저배율상에서 가장 바깥쪽의 석회침착, 그 안쪽의 호산성의 괴사조직, 그리고 중심부에는 진한 호염성으로 관찰되는 구조로 구성되어 있습니다. 전체적으로 의뢰 조직이 괴사 또는 자가융해로 인해 온전한 세포를 보기가 어렵습니다. 다만, 다… | site3 | https://ipeak.greenvet.co.kr/siteImage/19057/1295_01.jpg |
-| 20240131-154-0003 | S24-01295 | S24-01295#1###6.svs\|S24-01295#2###7.svs\|S24-01295#3###8.svs\|S24-01295#4###9.svs | Histopathology (4 Site/Lesion)-국내 |  | Mild lymphocytic prostatitis | Specimen: Other(prostate)<br>Appearance: soft, Size: 1X1X1cm<br>Operation: punch biopsy<br>Recurrence: N, Lymph: N<br> | 의뢰하신 개의 전립선에 대한 검사결과, 조직은 대체로 정상적인 소견을 보이고 있습니다. tubule 형태를 잘 유지하고 있으며 괴사, 종양성 병변은 관찰되지 않으나, tubule 사이에 림프구성 염증세포가 관찰되고 있습니다. 이러한 소견은 병원체 감… | 의뢰 전립선 조직 4점에 대해 제작 및 판독을 진행하였습니다. 조직은 비교적 정상적인 전립선 형태를 보이고 있습니다. 다수의 전립선 tubule들이 관찰되는데 이들은 주로 단층원주상피로 피복되어 있고 핵은 기저막쪽에 위치하며 호산성의 세포질은 풍부한… | site4 | https://ipeak.greenvet.co.kr/siteImage/19058/1295_01.jpg |
-| 20240131-154-0003 | S24-01295 | S24-01295#1###6.svs\|S24-01295#2###7.svs\|S24-01295#3###8.svs\|S24-01295#4###9.svs | Histopathology (4 Site/Lesion)-국내 |  | Necrotic materials with calcification in urinary bladder | Specimen: Other(bladder)<br>Appearance: 다발 multiple,산재 diffuse,soft,유동적 movable, Size: 1X1X1cm<br>Operation: excisional<br>Recurrence: N, L… | 의뢰하신 개의 방광 점막에 대한 검사결과, 방광 조직과 관련된 구조물은 전혀 관찰되지 않고 호산성의 괴사된 부위와 함께 석회침착이 주를 이루고 있습니다. 방광결석으로 인한 궤양성 방광염과 함께 그 부위에 부착된 괴사붕괴물로 사료됩니다. | 방광점막에 부착된 부위 3점에 대한 절편제작-판독을 진행하였습니다. 3점 모두 비슷한 소견을 보이고 있습니다. 저배울에서 조직은 중심부에 호산성으로 염색되는 비정형적인 구조물과 그 주변으로 진한 호염성의 물질이 띠를 두르는 형태를 보이고 있습니다. … | site2 | https://ipeak.greenvet.co.kr/siteImage/19056/1295_01.jpg |
-| 20240131-154-0003 | S24-01295 | S24-01295#1###6.svs\|S24-01295#2###7.svs\|S24-01295#3###8.svs\|S24-01295#4###9.svs | Histopathology (4 Site/Lesion)-국내 |  | Ulcerative cystitis | Specimen: Other(bladder)<br>Appearance: 단독 single, Size: 1X1X1cm<br>Operation: excisional<br>Recurrence: N, Lymph: N<br> | 의뢰하신 개의 방광에 대한 검사결과, 방광점막의 심한 손상, 그로인한 궤양성 변화, 점막하직의 섬유화 및 석회침착소견이 관찰되었습니다. 또한, 점막하직 내에는 이행상피로 피복되어 있는 커다란 낭상구조물이 확인되었습니다. 종양성 병변은 아니며, 방광샘… | 의뢰된 방광조직은 점막과 점막하직, 근육층, 장막을 포함하고 있습니다. 점막은 심하게 궤양화되어 있고, 궤양부위 인근에는 섬유결합조직이 증식하여 있는 소견과 함께 만성염증세포 침윤이 관찰됩니다. 괴사부위에는 다발성의 석회침착도 확인됩니다. 또한, 점… | site1 | https://ipeak.greenvet.co.kr/siteImage/19055/1295_01.jpg |
-| 20240209-123-0002 | S24-01731 | S24-01731#1###7.svs\|S24-01731#2###8.svs\|S24-01731#3###9.svs\|S24-01731#4#A##0.svs\|S24-01731#4#B##1.svs | Histopathology (4 Site/Lesion)-국내 |  | Adrenal cortical carcinoma | Specimen: Other(unknown-origin mass)<br>Appearance: 단독 single, Size: 1X2X1cm<br>Operation: excisional<br>Recurrence: N, Lymph: N<br> | Adrenal cortical carcinoma는 부신 피질에서 유래되는 종양으로, 나이든 강아지에서 주로 발생하며, adenoma에 비해서는 발생률이 낮은 것으로 알려져 있습니다. Carcinoma는 adenoma에 비해 크기가 큰 편으로, 후대정… | 의뢰된 site 3 부위 조직은 모두 제작되어 조직검사를 실시하였습니다. 저배율 소견에서 종괴 모두 종양인 것으로 확인되었으며, 일부 종괴는 종양의 경계를 확보한 외과적 제거가 이루어진 것으로 관찰되었으나, 일부 종괴는 절단면 인접 부위에 종양세포가… | site3 | https://ipeak.greenvet.co.kr/siteImage/19723/1731-3_01.jpg |
-| 20240209-123-0002 | S24-01731 | S24-01731#1###7.svs\|S24-01731#2###8.svs\|S24-01731#3###9.svs\|S24-01731#4#A##0.svs\|S24-01731#4#B##1.svs | Histopathology (4 Site/Lesion)-국내 |  | Cyst, see comments<br>(Ddx. Paraprostatic cyst) | Specimen: Other(intra-abdominal cyst)<br>Appearance: 단독 single, Size: 3X3X3cm<br>Operation: excisional<br>Recurrence: N, Lymph: N<br> | Site 1 부위 mass의 경우 낭성 병변인 것으로 확인되었으며, 낭은 상피세포로 lining되어 있어 true cyst인 것으로 진단되었습니다. 낭을 구성하는 세포는 단층의 입방상피세포 (cuboidal epithelium)인 것으로 관찰되었는데… | 의뢰된 site1 부위 mass에서는 낭성 병변이 관찰되었습니다. 저배율 소견상 낭성 병변이 관찰되었으며, 해당 낭을 고배율로 관찰했을 때, 낭은 단층의 입방상피세포 (cuboidal epithelium)로 lining 되어 있는 것으로 확인되었습니… | site1 | https://ipeak.greenvet.co.kr/siteImage/19721/1731-1_01.jpg |
-| 20240209-123-0002 | S24-01731 | S24-01731#1###7.svs\|S24-01731#2###8.svs\|S24-01731#3###9.svs\|S24-01731#4#A##0.svs\|S24-01731#4#B##1.svs | Histopathology (4 Site/Lesion)-국내 |  | Seminoma (Intratubular form) | Specimen: Testis<br>Appearance: 단독 single, Size: 4X3X3cm<br>Operation: excisional<br>Recurrence: N, Lymph: N<br> | Seminoma는 정세관 (seminiferous tubule) 내의 정자 형성을 담당하는 생식세포 (germ cell)에서 유래되는 종양으로 한쪽 (unilateral) 혹은 양측 (bilateral) 모두에서 발생할 수 있으며, 잠복 고환이 있을… | 의뢰된 mass는 두 단면의 슬라이드로 제작되어 조직병리학적 검사를 실시하였습니다. 저배율 소견에서 고환내에서 잘 구분되는 (well-demarcated) 형태의 mass가 관찰되며, 정세관(Seminiferous tubule) 내의 생식세포 (ge… | site4 | https://ipeak.greenvet.co.kr/siteImage/19724/1731-4_01.jpg |
-| 20240209-123-0002 | S24-01731 | S24-01731#1###7.svs\|S24-01731#2###8.svs\|S24-01731#3###9.svs\|S24-01731#4#A##0.svs\|S24-01731#4#B##1.svs | Histopathology (4 Site/Lesion)-국내 |  | Splenic lymphoid nodular hyperplasia | Specimen: Other(spleen)<br>Appearance: 단독 single, Size: 2X2X2cm<br>Operation: excisional<br>Recurrence: N, Lymph: N<br> | 비장에서 발생하는 결절성 과증식 (Splenic nodular hyperplasia)은 강아지에서 흔하게 발생하는 병변으로, 평균 11년령 경에 노화와 함께 특발성으로 발생하는 것으로 알려져 있습니다. Lymphoid nodular hyperplas… | 의뢰된 mass는 비장 실질의 림프 소포(Splenic follicle)가 과증식된 소견이 관찰되었습니다. 저배율 소견에서 주변 정상 비장 조직을 밀어내는 양상의 expansile mass가 확인되며, 몇몇 림프소포 (follicle)의 크기가 비교… | site2 | https://ipeak.greenvet.co.kr/siteImage/19722/1731-2_01.jpg |
-| 20240304-154-0006 | S24-02767 | S24-02767#1###5.svs\|S24-02767#2###6.svs\|S24-02767#3###7.svs\|S24-02767#4###8.svs | Histopathology (4 Site/Lesion)-국내 |  | Activation of lymph node (hyperplasia) | Specimen: Lymph nodes<br>Appearance: 단독 single, Size: 11X12X8cm<br>Operation: excisional<br>Recurrence: N, Lymph: Y<br> | 의뢰하신 개의 림프절에 대한 검사결과, 림프소절이 다수 증가하여 림프절이 종대된 소견으로, 증가된 림프구는 비교적 잘 분화된 형태로 관찰되어 림프소절 증식에 따른 병변으로 진단되었습니다. 림프구들은 핵인이 그리 크지 않고, 유사분열상도 거의 관찰되지… | 의뢰된 림프절은 피막에 둘러싸여 있고 림프절 주변에는 지방조직도 함께 관찰됩니다. 림프절 실질에는 다수의 림프소절이 증가되어 있어 피질과 수질의 구분이 어렵습니다. 림프소절의 주변부의 세포들도 증식하여 있으며, 이들은 비교적 잘 분화된 림프구로, 세… | site1 | https://ipeak.greenvet.co.kr/siteImage/21222/2767_1_01.jpg |
-| 20240304-154-0006 | S24-02766 | S24-02766#1#A##1.svs\|S24-02766#1#B##2.svs\|S24-02766#2###3.svs\|S24-02766#3###4.svs | Histopathology (3 Site/Lesion)-국내 |  | Activation of lymph node (hyperplasia) | Specimen: Lymph nodes<br>Appearance: 단독 single, Size: 1X1X1cm<br>Operation: excisional<br>Recurrence: N, Lymph: Y<br> | 의뢰하신 개의 림프절에 대한 검사결과, 림프소절이 다수 증가하여 림프절이 종대된 소견으로, 증가된 림프구는 비교적 잘 분화된 형태로 관찰되어 림프소절 증식에 따른 병변으로 진단되었습니다. 림프구들은 핵인이 그리 크지 않고, 유사분열상도 거의 관찰되지… | 의뢰된 림프절은 피막에 둘러싸여 있고 림프절 주변에는 지방조직도 함께 관찰됩니다. 림프절 실질에는 다수의 림프소절이 증가되어 있어 피질과 수질의 구분이 어렵습니다. 림프소절의 주변부의 세포들도 증식하여 있으며, 이들은 비교적 잘 분화된 림프구로, 세… | site3 | https://ipeak.greenvet.co.kr/siteImage/21220/2766_3_01.jpg |
-| 20240304-154-0006 | S24-02766 | S24-02766#1#A##1.svs\|S24-02766#1#B##2.svs\|S24-02766#2###3.svs\|S24-02766#3###4.svs | Histopathology (3 Site/Lesion)-국내 |  | Fibrous tissue | Specimen: Lymph nodes<br>Appearance: 단독 single, Size: 1X1X1cm<br>Operation: excisional<br>Recurrence: N, Lymph: Y<br> | 의뢰하신 조직에 대한 검사결과, 염증과정에서 관찰될 수 있는 세포 성분들이 확인되었습니다. 섬유결합조직의 증생과 만성염증세포가 관찰되고 있어, 염증은 급성의 단계를 넘어 진행되는 것으로 보입니다. 염증을 일으킬만한 원인체(이물, 병원체)는 관찰되지 … | 의뢰된 조직은 가장 바깥쪽에서부터 지방조직, 섬유화되는 조직 및 중심부에 섬유소 및 혈액성분으로 구성되어 있습니다. 지방세포들은 비교적 정상적인 형태를 보이고 있고, 이들과 바로 인접하여 섬유결합조직들이 증생되어 있습니다. 이들 조직에는 만성염증세포… | site2 | https://ipeak.greenvet.co.kr/siteImage/21219/2766_2_01.jpg |
-| 20240304-154-0006 | S24-02767 | S24-02767#1###5.svs\|S24-02767#2###6.svs\|S24-02767#3###7.svs\|S24-02767#4###8.svs | Histopathology (4 Site/Lesion)-국내 |  | Inflammatory exudate | Specimen: Lymph nodes<br>Appearance: 단독 single, Size: 1X1X1cm<br>Operation: excisional<br>Recurrence: N, Lymph: Y<br> | 의뢰된 조직에 대한 검사결과, 염증반응에서 관찰될 수 있는 삼출물 성분들이 확인되었습니다. 일부 유화 조직을 포함하여 큰포식세포 등의 세포가 관찰되는 것으로 보아, 염증은 급성의 단계를 넘어 진행되는 것으로 보입니다. 염증을 일으킬만한 원인체(이물… | 의뢰된 조직은 비정형 조직으로 섬유소, 섬유화 조직, 염증세포(큰포식세포, 호중구 등), 지방세포 등을 포함하고 있습니다. 특정조직으로 칭할 수 있는 성분이 없이 염증시 관찰될 수 있는 삼출물 및 염증세포들이 관찰되고 있습니다. | site2 | https://ipeak.greenvet.co.kr/siteImage/21223/2676_2_01.jpg |
 
 ## End-to-end 파이프라인 도식
 WSI와 GreenVet Excel 메타데이터가 입력되어 모델 학습과 배포까지 도달하는 전체 단계를 아래와 같이 구성합니다.
