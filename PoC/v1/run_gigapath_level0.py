@@ -6,6 +6,7 @@ to pull features from s3://gc-pathology/gv-level0-embedding-metadata/.
 """
 
 import json
+import os
 import shlex
 import subprocess
 from pathlib import Path
@@ -30,7 +31,8 @@ REMOTE_TRAIN_SCRIPT = f"{REMOTE_WORK}/train_mil.py"
 REMOTE_VENV = "~/venv_gigapath"
 
 # S3 settings (level-0 embeddings)
-S3_PREFIX = "s3://gc-pathology/gv-level0-embedding-metadata/"
+# Can be overridden via env `S3_PREFIX` for convenience.
+S3_PREFIX = os.getenv("S3_PREFIX", "s3://gc-pathology/gv-level0-embedding-metadata/")
 AWS_PROFILE = None
 AWS_REGION = "ap-northeast-2"
 AWS_ENDPOINT = None

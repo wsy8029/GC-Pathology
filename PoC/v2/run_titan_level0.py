@@ -36,7 +36,10 @@ from PIL import Image
 from transformers import AutoModel
 
 
-DEFAULT_S3_PREFIX = "s3://gc-pathology/gv-titan-level0-embedding-metadata/"
+DEFAULT_S3_PREFIX = os.getenv(
+    "S3_PREFIX",
+    "s3://gc-pathology/gv-titan-level0-embedding-metadata/",
+)
 DEFAULT_OUTPUT_DIR = Path(__file__).resolve().parent / "output_titan"
 SUPPORTED_EXTS = (".svs", ".tif", ".tiff", ".ndpi")
 
