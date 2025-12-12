@@ -1,0 +1,13 @@
+Example command to run Virchow2 embedding with defaults:
+
+python virchow-embedding.py \
+  --parquet /path/to/slides.parquet \
+  --volume-root /Volumes/Expansion \
+  --slide-root 2023 \
+  --output-s3 s3://gc-pathology/gv-virchow2-level0-embedding-metadata/ \
+  --hf-token <your_hf_token>
+
+Notes:
+- Parquet must include FOLDER and FILE_NAME columns (label column is read from parquet).
+- volume-root is your mounted drive; slide-root is the folder under that drive (can be absolute to override).
+- Other options (level, tile-size, batch-size, min-tissue-ratio, max-slides, seed) have sensible defaults; override if needed.
